@@ -20,6 +20,47 @@
                 </div>
             </div>
             <div class="card-body">
+                <!-- AI Insights Section -->
+                <div class="mb-4">
+                    <h6><i class="fas fa-robot"></i> AI Insights</h6>
+                    {% if document.keywords or document.topics or document.sentiment %}
+                    <div class="mb-3">
+                        {% if document.keywords %}
+                        <strong>Keywords:</strong>
+                        <ul class="list-inline">
+                            {% for keyword in document.keywords %}
+                            <li class="list-inline-item badge bg-primary me-1">{{ keyword }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {% if document.topics %}
+                        <strong>Topics:</strong>
+                        <ul class="list-inline">
+                            {% for topic in document.topics %}
+                            <li class="list-inline-item badge bg-success me-1">{{ topic }}</li>
+                            {% endfor %}
+                        </ul>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        {% if document.sentiment %}
+                        <strong>Sentiment:</strong>
+                        {% if document.sentiment == "positive" %}
+                        <span class="badge bg-success"><i class="fas fa-smile"></i> Positive</span>
+                        {% elif document.sentiment == "negative" %}
+                        <span class="badge bg-danger"><i class="fas fa-frown"></i> Negative</span>
+                        {% else %}
+                        <span class="badge bg-secondary"><i class="fas fa-meh"></i> Neutral</span>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted">No AI insights available for this document.</p>
+                    {% endif %}
+                </div>
+
                 <!-- Document Summary -->
                 {% if document.summary %}
                 <div class="alert alert-info">
@@ -28,20 +69,46 @@
                 </div>
                 {% endif %}
 
-                <!-- Document Content Preview -->
+                <!-- AI Insights -->
                 <div class="mb-4">
-                    <h6>Content Preview</h6>
-                    <div class="border rounded p-3" style="max-height: 400px; overflow-y: auto; background-color: #f8f9fa;">
-                        {% if document.content_text %}
-                            <pre class="mb-0" style="white-space: pre-wrap; font-family: inherit;">{{ document.content_text|truncatewords:200 }}</pre>
-                            {% if document.content_text|wordcount > 200 %}
-                                <hr>
-                                <small class="text-muted">Content truncated. Download the full document to see more.</small>
-                            {% endif %}
-                        {% else %}
-                            <p class="text-muted mb-0">Content preview not available</p>
-                        {% endif %}
+                    <h6><i class="fas fa-brain"></i> AI Insights</h6>
+
+                    <!-- Keywords -->
+                    {% if document.keywords %}
+                    <div class="mb-3">
+                        <strong>Keywords:</strong>
+                        <div class="mt-2">
+                            {% for keyword in document.keywords %}
+                            <span class="badge bg-primary text-white me-1 mb-1">{{ keyword }}</span>
+                            {% endfor %}
+                        </div>
                     </div>
+                    {% endif %}
+
+                    <!-- Topics -->
+                    {% if document.topics %}
+                    <div class="mb-3">
+                        <strong>Topics:</strong>
+                        <div class="mt-2">
+                            {% for topic in document.topics %}
+                            <span class="badge bg-secondary text-white me-1 mb-1">{{ topic|title }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Sentiment -->
+                    {% if document.sentiment %}
+                    <div class="mb-3">
+                        <strong>Sentiment:</strong>
+                        <span class="badge
+                            {% if document.sentiment == 'positive' %}bg-success
+                            {% elif document.sentiment == 'negative' %}bg-danger
+                            {% else %}bg-warning text-dark{% endif %} ms-2">
+                            {{ document.sentiment|title }}
+                        </span>
+                    </div>
+                    {% endif %}
                 </div>
 
                 <!-- Extracted Entities -->
@@ -53,34 +120,34 @@
                         <div class="col-md-6 mb-3">
                             <strong>Persons:</strong>
                             {% for person in document.entities.persons %}
-                                <span class="badge bg-light text-dark me-1">{{ person }}</span>
+                            <span class="badge bg-light text-dark me-1">{{ person }}</span>
                             {% endfor %}
                         </div>
                         {% endif %}
-                        
+
                         {% if document.entities.organizations %}
                         <div class="col-md-6 mb-3">
                             <strong>Organizations:</strong>
                             {% for org in document.entities.organizations %}
-                                <span class="badge bg-light text-dark me-1">{{ org }}</span>
+                            <span class="badge bg-light text-dark me-1">{{ org }}</span>
                             {% endfor %}
                         </div>
                         {% endif %}
-                        
+
                         {% if document.entities.money %}
                         <div class="col-md-6 mb-3">
                             <strong>Money:</strong>
                             {% for amount in document.entities.money %}
-                                <span class="badge bg-success text-white me-1">{{ amount }}</span>
+                            <span class="badge bg-success text-white me-1">{{ amount }}</span>
                             {% endfor %}
                         </div>
                         {% endif %}
-                        
+
                         {% if document.entities.locations %}
                         <div class="col-md-6 mb-3">
                             <strong>Locations:</strong>
                             {% for location in document.entities.locations %}
-                                <span class="badge bg-info text-white me-1">{{ location }}</span>
+                            <span class="badge bg-info text-white me-1">{{ location }}</span>
                             {% endfor %}
                         </div>
                         {% endif %}
@@ -101,51 +168,55 @@
                 <dl class="row">
                     <dt class="col-sm-4">Filename:</dt>
                     <dd class="col-sm-8">{{ document.original_filename }}</dd>
-                    
+
                     <dt class="col-sm-4">Category:</dt>
                     <dd class="col-sm-8">
                         {% if document.category %}
-                            <span class="badge category-{{ document.category }} text-white">
-                                {{ document.get_category_display }}
-                            </span>
-                            {% if document.category_confidence %}
-                                <small class="text-muted">({{ document.category_confidence|floatformat:1 }}% confidence)</small>
-                            {% endif %}
+                        <span class="badge category-{{ document.category }} text-white">
+                            {{ document.get_category_display }}
+                        </span>
+                        {% if document.category_confidence %}
+                        <small class="text-muted">
+                            ({% widthratio document.category_confidence 1 100 %}% confidence)
+                        </small>
+                        {% endif %}
+
                         {% else %}
-                            <span class="text-muted">Uncategorized</span>
+                        <span class="text-muted">Uncategorized</span>
                         {% endif %}
                     </dd>
-                    
+
                     {% if document.author %}
                     <dt class="col-sm-4">Author:</dt>
                     <dd class="col-sm-8">{{ document.author }}</dd>
                     {% endif %}
-                    
+
                     {% if document.extracted_date %}
                     <dt class="col-sm-4">Document Date:</dt>
                     <dd class="col-sm-8">{{ document.extracted_date|date:"F d, Y" }}</dd>
                     {% endif %}
-                    
+
                     <dt class="col-sm-4">File Size:</dt>
                     <dd class="col-sm-8">{{ document.get_file_size_display }}</dd>
-                    
+
                     <dt class="col-sm-4">File Type:</dt>
                     <dd class="col-sm-8">
                         <span class="badge bg-secondary">{{ document.file_type|upper }}</span>
                     </dd>
-                    
+
                     <dt class="col-sm-4">Uploaded by:</dt>
-                    <dd class="col-sm-8">{{ document.uploaded_by.get_full_name|default:document.uploaded_by.username }}</dd>
-                    
+                    <dd class="col-sm-8">{{ document.uploaded_by.get_full_name|default:document.uploaded_by.username }}
+                    </dd>
+
                     <dt class="col-sm-4">Upload Date:</dt>
                     <dd class="col-sm-8">{{ document.uploaded_at|date:"F d, Y H:i" }}</dd>
-                    
+
                     <dt class="col-sm-4">Access:</dt>
                     <dd class="col-sm-8">
                         {% if document.is_public %}
-                            <span class="badge bg-success">Public</span>
+                        <span class="badge bg-success">Public</span>
                         {% else %}
-                            <span class="badge bg-warning text-dark">Restricted</span>
+                        <span class="badge bg-warning text-dark">Restricted</span>
                         {% endif %}
                     </dd>
                 </dl>
@@ -159,10 +230,11 @@
             </div>
             <div class="card-body">
                 <p class="text-muted">
-                    <i class="fas fa-lightbulb"></i> 
+                    <i class="fas fa-lightbulb"></i>
                     Use semantic search to find related documents based on content similarity.
                 </p>
-                <a href="{% url 'search_app:search' %}?query={{ document.title|urlencode }}" class="btn btn-outline-primary btn-sm">
+                <a href="{% url 'search_app:search' %}?query={{ document.title|urlencode }}"
+                    class="btn btn-outline-primary btn-sm">
                     <i class="fas fa-search"></i> Find Similar Documents
                 </a>
             </div>

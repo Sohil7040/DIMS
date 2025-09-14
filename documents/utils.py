@@ -8,14 +8,46 @@ from django.conf import settings
 # Document processing imports
 try:
     import PyPDF2
+    HAS_PYPDF2 = True
+except ImportError:
+    HAS_PYPDF2 = False
+    print("Warning: PyPDF2 not available")
+
+try:
     from docx import Document as DocxDocument
+    HAS_DOCX = True
+except ImportError:
+    HAS_DOCX = False
+    print("Warning: python-docx not available")
+
+try:
     from transformers import pipeline
+    HAS_TRANSFORMERS = True
+except ImportError:
+    HAS_TRANSFORMERS = False
+    print("Warning: transformers not available")
+
+try:
     from sentence_transformers import SentenceTransformer
+    HAS_SENTENCE_TRANSFORMERS = True
+except ImportError:
+    HAS_SENTENCE_TRANSFORMERS = False
+    print("Warning: sentence-transformers not available")
+
+try:
     import spacy
+    HAS_SPACY = True
+except ImportError:
+    HAS_SPACY = False
+    print("Warning: spacy not available")
+
+try:
     from sklearn.feature_extraction.text import TfidfVectorizer
     import numpy as np
-except ImportError as e:
-    print(f"Warning: Some dependencies not available: {e}")
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+    print("Warning: sklearn not available")
 
 
 class DocumentProcessor:
@@ -23,24 +55,36 @@ class DocumentProcessor:
         self.classifier = None
         self.sentence_model = None
         self.nlp = None
+        self.sentiment_analyzer = None
         self._initialize_models()
     
     def _initialize_models(self):
         """Initialize AI models"""
         try:
             # Zero-shot classifier for document classification
-            self.classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
-            
+            if HAS_TRANSFORMERS:
+                self.classifier = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
+                self.sentiment_analyzer = pipeline("sentiment-analysis", model="cardiffnlp/twitter-roberta-base-sentiment-latest")
+            else:
+                self.classifier = None
+                self.sentiment_analyzer = None
+
             # Sentence transformer for embeddings
-            self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
-            
+            if HAS_SENTENCE_TRANSFORMERS:
+                self.sentence_model = SentenceTransformer('all-MiniLM-L6-v2')
+            else:
+                self.sentence_model = None
+
             # spaCy for NER
-            try:
-                self.nlp = spacy.load("en_core_web_sm")
-            except OSError:
-                print("Warning: spaCy English model not found. Run: python -m spacy download en_core_web_sm")
+            if HAS_SPACY:
+                try:
+                    self.nlp = spacy.load("en_core_web_sm")
+                except OSError:
+                    print("Warning: spaCy English model not found. Run: python -m spacy download en_core_web_sm")
+                    self.nlp = None
+            else:
                 self.nlp = None
-                
+
         except Exception as e:
             print(f"Warning: Could not initialize AI models: {e}")
     
@@ -253,28 +297,33 @@ class DocumentProcessor:
     
     def generate_summary(self, text: str, num_sentences: int = 3) -> str:
         """Generate extractive summary using TF-IDF"""
+        if not HAS_SKLEARN:
+            # Fallback: return first few sentences
+            sentences = re.split(r'[.!?]+', text)[:num_sentences]
+            return '. '.join(s.strip() for s in sentences if s.strip()) + '.'
+
         try:
             # Split into sentences
             sentences = re.split(r'[.!?]+', text)
             sentences = [s.strip() for s in sentences if len(s.strip()) > 20]
-            
+
             if len(sentences) <= num_sentences:
                 return ' '.join(sentences)
-            
+
             # Use TF-IDF to find important sentences
             vectorizer = TfidfVectorizer(stop_words='english', max_features=100)
             tfidf_matrix = vectorizer.fit_transform(sentences)
-            
+
             # Calculate sentence scores
             sentence_scores = np.array(tfidf_matrix.sum(axis=1)).flatten()
-            
+
             # Get top sentences
             top_indices = sentence_scores.argsort()[-num_sentences:][::-1]
             top_indices = sorted(top_indices)  # Keep original order
-            
+
             summary_sentences = [sentences[i] for i in top_indices]
             return '. '.join(summary_sentences) + '.'
-            
+
         except Exception as e:
             print(f"Error generating summary: {e}")
             # Fallback: return first few sentences
@@ -285,7 +334,7 @@ class DocumentProcessor:
         """Generate embeddings for semantic search"""
         if not self.sentence_model:
             return []
-        
+
         try:
             # Use first 1000 characters for embedding
             sample_text = text[:1000]
@@ -294,6 +343,101 @@ class DocumentProcessor:
         except Exception as e:
             print(f"Error generating embeddings: {e}")
             return []
+
+    def extract_keywords(self, text: str, num_keywords: int = 10) -> List[str]:
+        """Extract keywords using TF-IDF"""
+        if not HAS_SKLEARN:
+            return self._extract_keywords_spacy(text, num_keywords)
+
+        try:
+            # Split into sentences
+            sentences = re.split(r'[.!?]+', text)
+            sentences = [s.strip() for s in sentences if len(s.strip()) > 10]
+
+            if len(sentences) < 2:
+                # Fallback: extract nouns using spaCy
+                return self._extract_keywords_spacy(text, num_keywords)
+
+            # Use TF-IDF
+            vectorizer = TfidfVectorizer(stop_words='english', max_features=100, ngram_range=(1, 2))
+            tfidf_matrix = vectorizer.fit_transform(sentences)
+
+            # Get feature names and scores
+            feature_names = vectorizer.get_feature_names_out()
+            scores = np.array(tfidf_matrix.sum(axis=0)).flatten()
+
+            # Get top keywords
+            top_indices = scores.argsort()[-num_keywords:][::-1]
+            keywords = [feature_names[i] for i in top_indices]
+
+            return keywords
+
+        except Exception as e:
+            print(f"Error extracting keywords: {e}")
+            return self._extract_keywords_spacy(text, num_keywords)
+
+    def _extract_keywords_spacy(self, text: str, num_keywords: int = 10) -> List[str]:
+        """Fallback keyword extraction using spaCy"""
+        if not self.nlp:
+            return []
+
+        try:
+            doc = self.nlp(text[:2000])
+            nouns = [token.lemma_.lower() for token in doc if token.pos_ in ['NOUN', 'PROPN'] and len(token.lemma_) > 3]
+            # Count frequency
+            from collections import Counter
+            counter = Counter(nouns)
+            keywords = [word for word, _ in counter.most_common(num_keywords)]
+            return keywords
+        except Exception as e:
+            print(f"Error in spaCy keyword extraction: {e}")
+            return []
+
+    def extract_topics(self, text: str, num_topics: int = 5) -> List[str]:
+        """Extract topics by finding common noun phrases"""
+        if not self.nlp:
+            return []
+
+        try:
+            doc = self.nlp(text[:3000])
+            # Extract noun chunks
+            topics = []
+            for chunk in doc.noun_chunks:
+                if len(chunk.text.split()) > 1 and len(chunk.text) > 5:
+                    topics.append(chunk.text.lower())
+
+            # Get most common topics
+            from collections import Counter
+            counter = Counter(topics)
+            common_topics = [topic for topic, _ in counter.most_common(num_topics)]
+            return common_topics
+
+        except Exception as e:
+            print(f"Error extracting topics: {e}")
+            return []
+
+    def analyze_sentiment(self, text: str) -> str:
+        """Analyze sentiment of the text"""
+        if not self.sentiment_analyzer:
+            return "neutral"
+
+        try:
+            # Use first 500 characters for sentiment
+            sample_text = text[:500]
+            result = self.sentiment_analyzer(sample_text)
+            if result:
+                label = result[0]['label']
+                # Map to simple labels
+                if label in ['LABEL_2', 'positive']:
+                    return "positive"
+                elif label in ['LABEL_0', 'negative']:
+                    return "negative"
+                else:
+                    return "neutral"
+            return "neutral"
+        except Exception as e:
+            print(f"Error in sentiment analysis: {e}")
+            return "neutral"
 
 
 # Global processor instance
@@ -334,11 +478,23 @@ def process_document(document):
         # Generate summary
         if content:
             document.summary = processor.generate_summary(content)
-        
+
+        # Extract keywords
+        if content:
+            document.keywords = processor.extract_keywords(content)
+
+        # Extract topics
+        if content:
+            document.topics = processor.extract_topics(content)
+
+        # Analyze sentiment
+        if content:
+            document.sentiment = processor.analyze_sentiment(content)
+
         # Generate embeddings for search
         if content:
             document.embeddings = processor.generate_embeddings(content)
-        
+
         document.save()
         
     except Exception as e:

@@ -1,0 +1,8 @@
+
+        This is a sample document about artificial intelligence and machine learning.
+        AI is transforming the way we work and live. Machine learning algorithms can
+        analyze large amounts of data to make predictions. Natural language processing
+        helps computers understand human language. Deep learning models are becoming
+        increasingly sophisticated. The future of technology looks bright with these
+        advancements in AI and ML.
+        

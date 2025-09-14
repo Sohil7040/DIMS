@@ -1,19 +1,28 @@
-# Document AI Project Setup TODO
+# TODO - Improve AI Overview Section
 
-## Pending Tasks
-- [x] Move UserProfile model from documents/models.py to auth_app/models.py
-- [x] Update imports in views that reference UserProfile (no changes needed)
-- [x] Create auth_app/models.py with UserProfile
-- [ ] Run makemigrations for all apps (documents, search_app, auth_app)
-- [ ] Run migrate
-- [ ] Install spaCy English model: python -m spacy download en_core_web_sm
-- [ ] Create superuser
-- [ ] Create basic templates (dashboard.html, upload.html, list.html, search.html)
-- [ ] Run server and test basic functionality
-- [x] Test document upload and processing (classification confidence improved)
-- [ ] Test search functionality
-- [x] Update document classification model to use pretrained zero-shot classifier for better confidence
+## Steps:
+1. Review and finalize the new fields in documents/models.py for keywords, topics, and sentiment.
+2. Verify and enhance the AI extraction methods in documents/utils.py:
+   - extract_keywords()
+   - extract_topics()
+   - analyze_sentiment()
+   - Ensure conditional imports and graceful handling of missing dependencies.
+3. Update templates/documents/view.html:
+   - Enhance AI Insights section to display keywords, topics, and sentiment distinctly from content preview.
+4. Update requirements.txt to include missing dependencies:
+   - scikit-learn
+   - sentence-transformers
+   - spacy
+   - transformers
+5. Add or update tests in test_ai_features.py or other relevant test files to verify:
+   - AI insights extraction correctness.
+   - Proper display of AI insights in the document view.
+6. Test the entire flow:
+   - Upload document.
+   - AI processing for keywords, topics, sentiment.
+   - Display in document detail view.
+7. Provide instructions for installing dependencies and handling missing packages gracefully.
 
-## Completed Tasks
-- [x] Install Python dependencies from requirements.txt
-- [x] Verify project structure and existing code
+## Notes:
+- Handle missing dependencies gracefully with flags HAS_SKLEARN, HAS_SENTENCE_TRANSFORMERS, etc.
+- Ensure AI insights provide distinct and valuable information compared to content preview.

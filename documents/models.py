@@ -24,7 +24,10 @@ class Document(models.Model):
     content_text = models.TextField(blank=True)
     summary = models.TextField(blank=True)
     entities = models.JSONField(default=dict, blank=True)
-    
+    keywords = models.JSONField(default=list, blank=True)
+    topics = models.JSONField(default=list, blank=True)
+    sentiment = models.CharField(max_length=20, blank=True)
+
     # Embeddings for semantic search
     embeddings = models.JSONField(default=list, blank=True)
     
