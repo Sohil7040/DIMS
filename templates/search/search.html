@@ -1,0 +1,333 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Documents - Document AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-search"></i> Search Documents</h1>
+    <div class="btn-group">
+        <button type="button" class="btn btn-outline-primary active" id="keywordSearchBtn">
+            <i class="fas fa-keyboard"></i> Keyword Search
+        </button>
+        <button type="button" class="btn btn-outline-primary" id="semanticSearchBtn">
+            <i class="fas fa-brain"></i> Semantic Search
+        </button>
+    </div>
+</div>
+
+<!-- Keyword Search Form -->
+<div class="card mb-4" id="keywordSearchForm">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                {{ form.query }}
+            </div>
+            <div class="col-md-2">
+                {{ form.category }}
+            </div>
+            <div class="col-md-2">
+                {{ form.author }}
+            </div>
+            <div class="col-md-2">
+                {{ form.date_from }}
+            </div>
+            <div class="col-md-2">
+                {{ form.date_to }}
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary me-2">
+                    <i class="fas fa-search"></i> Search
+                </button>
+                <a href="{% url 'search_app:search' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Semantic Search Form -->
+<div class="card mb-4" id="semanticSearchForm" style="display: none;">
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="fas fa-lightbulb"></i>
+            <strong>Semantic Search:</strong> Find documents based on meaning and context, not just keywords.
+            Try queries like "financial reports about revenue" or "legal contracts with payment terms".
+        </div>
+        <div class="row">
+            <div class="col-md-10">
+                <input type="text" class="form-control" id="semanticQuery" placeholder="Describe what you're looking for...">
+            </div>
+            <div class="col-md-2">
+                <button type="button" class="btn btn-primary w-100" id="semanticSearchButton">
+                    <i class="fas fa-brain"></i> Search
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Results -->
+<div id="searchResults">
+    {% if query %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        Showing {{ search_type }} search results for: <strong>"{{ query }}"</strong>
+        {% if documents.paginator.count %}
+            ({{ documents.paginator.count }} documents found)
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="row">
+        {% for document in documents %}
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title">
+                            <a href="{% url 'documents:view' document.id %}" class="text-decoration-none">
+                                {{ document.title|truncatechars:60 }}
+                            </a>
+                        </h5>
+                        {% if document.category %}
+                            <span class="badge category-{{ document.category }} text-white">
+                                {{ document.get_category_display }}
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-2">
+                        <small class="text-muted">
+                            <i class="fas fa-file"></i> {{ document.filename|truncatechars:30 }}
+                        </small>
+                    </div>
+                    
+                    {% if document.summary %}
+                    <p class="card-text text-muted small">
+                        {{ document.summary|truncatechars:150 }}
+                    </p>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            {% if document.author %}
+                                by {{ document.author|truncatechars:20 }}
+                            {% else %}
+                                by {{ document.uploaded_by.username }}
+                            {% endif %}
+                            <br>
+                            <i class="fas fa-calendar"></i> {{ document.uploaded_at|date:"M d, Y" }}
+                        </small>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'documents:view' document.id %}" class="btn btn-outline-primary">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="{% url 'documents:download' document.id %}" class="btn btn-outline-success">
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-5x text-muted mb-3"></i>
+                <h4 class="text-muted">No documents found</h4>
+                <p class="text-muted">
+                    {% if query %}
+                        No documents match your search criteria. Try different keywords or use semantic search.
+                    {% else %}
+                        Enter a search query to find documents.
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if documents.has_other_pages %}
+    <nav aria-label="Search results pagination" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if documents.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ documents.previous_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}">
+                        Previous
+                    </a>
+                </li>
+            {% endif %}
+            
+            {% for num in documents.paginator.page_range %}
+                {% if documents.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% elif num > documents.number|add:'-3' and num < documents.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}">
+                            {{ num }}
+                        </a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if documents.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ documents.next_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}">
+                        Next
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Semantic Search Results Container -->
+<div id="semanticResults" style="display: none;">
+    <div class="alert alert-info">
+        <i class="fas fa-brain"></i>
+        <strong>Semantic Search Results</strong> - Documents ranked by relevance
+    </div>
+    <div id="semanticResultsContainer"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const keywordSearchBtn = document.getElementById('keywordSearchBtn');
+    const semanticSearchBtn = document.getElementById('semanticSearchBtn');
+    const keywordSearchForm = document.getElementById('keywordSearchForm');
+    const semanticSearchForm = document.getElementById('semanticSearchForm');
+    const searchResults = document.getElementById('searchResults');
+    const semanticResults = document.getElementById('semanticResults');
+    
+    // Switch between search modes
+    keywordSearchBtn.addEventListener('click', function() {
+        keywordSearchBtn.classList.add('active');
+        semanticSearchBtn.classList.remove('active');
+        keywordSearchForm.style.display = 'block';
+        semanticSearchForm.style.display = 'none';
+        searchResults.style.display = 'block';
+        semanticResults.style.display = 'none';
+    });
+    
+    semanticSearchBtn.addEventListener('click', function() {
+        semanticSearchBtn.classList.add('active');
+        keywordSearchBtn.classList.remove('active');
+        keywordSearchForm.style.display = 'none';
+        semanticSearchForm.style.display = 'block';
+        searchResults.style.display = 'none';
+        semanticResults.style.display = 'block';
+    });
+    
+    // Semantic search
+    document.getElementById('semanticSearchButton').addEventListener('click', function() {
+        const query = document.getElementById('semanticQuery').value.trim();
+        if (!query) {
+            alert('Please enter a search query');
+            return;
+        }
+        
+        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
+        this.disabled = true;
+        
+        fetch('{% url "search_app:semantic" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({ query: query })
+        })
+        .then(response => response.json())
+        .then(data => {
+            displaySemanticResults(data.results || []);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Search failed. Please try again.');
+        })
+        .finally(() => {
+            this.innerHTML = '<i class="fas fa-brain"></i> Search';
+            this.disabled = false;
+        });
+    });
+    
+    function displaySemanticResults(results) {
+        const container = document.getElementById('semanticResultsContainer');
+        
+        if (results.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-search fa-5x text-muted mb-3"></i>
+                    <h4 class="text-muted">No similar documents found</h4>
+                    <p class="text-muted">Try rephrasing your query or using different terms.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '<div class="row">';
+        results.forEach(doc => {
+            html += `
+                <div class="col-lg-6 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h5 class="card-title">
+                                    <a href="${doc.url}" class="text-decoration-none">
+                                        ${doc.title}
+                                    </a>
+                                </h5>
+                                <div>
+                                    <span class="badge category-${doc.category.toLowerCase().replace(' ', '_')} text-white">
+                                        ${doc.category}
+                                    </span>
+                                    <div class="mt-1">
+                                        <small class="similarity-score">
+                                            ${(doc.similarity * 100).toFixed(0)}% match
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-file"></i> ${doc.filename}
+                                </small>
+                            </div>
+                            
+                            <p class="card-text text-muted small">${doc.summary}</p>
+                            
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    by ${doc.author || 'Unknown'}
+                                    <br>
+                                    <i class="fas fa-calendar"></i> ${doc.uploaded_at}
+                                </small>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="${doc.url}" class="btn btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="/documents/download/${doc.id}/" class="btn btn-outline-success">
+                                        <i class="fas fa-download"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        container.innerHTML = html;
+    }
+});
+</script>
+{% endblock %}

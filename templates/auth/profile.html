@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - Document AI{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h4><i class="fas fa-user"></i> Profile Settings</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.role.id_for_label }}" class="form-label">Role</label>
+                            {{ form.role }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.department.id_for_label }}" class="form-label">Department</label>
+                            {{ form.department }}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check">
+                                {{ form.can_upload }}
+                                <label class="form-check-label" for="{{ form.can_upload.id_for_label }}">
+                                    Can upload documents
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.storage_quota_mb.id_for_label }}" class="form-label">Storage Quota (MB)</label>
+                            {{ form.storage_quota_mb }}
+                            {% if form.storage_quota_mb.help_text %}
+                                <div class="form-text">{{ form.storage_quota_mb.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-bar"></i> Your Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <h3 class="text-primary">{{ stats.uploaded_docs }}</h3>
+                        <small class="text-muted">Documents Uploaded</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h3 class="text-success">{{ stats.total_views }}</h3>
+                        <small class="text-muted">Documents Viewed</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h3 class="text-info">{{ stats.total_downloads }}</h3>
+                        <small class="text-muted">Downloads</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <h3 class="text-warning">{{ stats.total_searches }}</h3>
+                        <small class="text-muted">Searches</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="fas fa-key"></i> Access Permissions</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Role:</strong> {{ user_profile.role|title }}</p>
+                <p><strong>Department:</strong> {{ user_profile.department|default:"Not set" }}</p>
+                <p><strong>Accessible Categories:</strong></p>
+                <ul class="list-unstyled">
+                    {% for category in user_profile.allowed_categories %}
+                        <li><i class="fas fa-check text-success"></i> {{ category|title }}</li>
+                    {% empty %}
+                        <li><i class="fas fa-times text-muted"></i> No specific categories</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

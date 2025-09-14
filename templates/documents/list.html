@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}All Documents - Document AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-list"></i> All Documents</h1>
+    <a href="{% url 'documents:upload' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Upload New
+    </a>
+</div>
+
+<!-- Search and Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                {{ form.query }}
+            </div>
+            <div class="col-md-2">
+                {{ form.category }}
+            </div>
+            <div class="col-md-2">
+                {{ form.author }}
+            </div>
+            <div class="col-md-2">
+                {{ form.date_from }}
+            </div>
+            <div class="col-md-2">
+                {{ form.date_to }}
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="fas fa-filter"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Documents List -->
+<div class="row">
+    {% for document in documents %}
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title">
+                        <a href="{% url 'documents:view' document.id %}" class="text-decoration-none">
+                            {{ document.title|truncatechars:60 }}
+                        </a>
+                    </h5>
+                    {% if document.category %}
+                        <span class="badge category-{{ document.category }} text-white">
+                            {{ document.get_category_display }}
+                        </span>
+                    {% endif %}
+                </div>
+                
+                <div class="mb-2">
+                    <small class="text-muted">
+                        <i class="fas fa-file"></i> {{ document.filename|truncatechars:30 }}
+                        <span class="ms-2"><i class="fas fa-weight"></i> {{ document.get_file_size_display }}</span>
+                    </small>
+                </div>
+                
+                {% if document.summary %}
+                <p class="card-text text-muted small">
+                    {{ document.summary|truncatechars:120 }}
+                </p>
+                {% endif %}
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        {% if document.author %}
+                            by {{ document.author|truncatechars:20 }}
+                        {% else %}
+                            by {{ document.uploaded_by.username }}
+                        {% endif %}
+                        <br>
+                        <i class="fas fa-calendar"></i> {{ document.uploaded_at|date:"M d, Y" }}
+                    </small>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'documents:view' document.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{% url 'documents:download' document.id %}" class="btn btn-outline-success">
+                            <i class="fas fa-download"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                {% if document.is_public %}
+                <div class="mt-2">
+                    <span class="badge bg-light text-dark"><i class="fas fa-globe"></i> Public</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="text-center py-5">
+            <i class="fas fa-folder-open fa-5x text-muted mb-3"></i>
+            <h4 class="text-muted">No documents found</h4>
+            <p class="text-muted">Try adjusting your search filters or upload a new document.</p>
+            <a href="{% url 'documents:upload' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Upload Document
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if documents.has_other_pages %}
+<nav aria-label="Documents pagination" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if documents.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ documents.previous_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">
+                    Previous
+                </a>
+            </li>
+        {% endif %}
+        
+        {% for num in documents.paginator.page_range %}
+            {% if documents.number == num %}
+                <li class="page-item active">
+                    <span class="page-link">{{ num }}</span>
+                </li>
+            {% elif num > documents.number|add:'-3' and num < documents.number|add:'3' %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ num }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">
+                        {{ num }}
+                    </a>
+                </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if documents.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ documents.next_page_number }}{% if request.GET.query %}&query={{ request.GET.query }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}">
+                    Next
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}

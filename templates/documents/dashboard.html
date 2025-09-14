@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Document AI{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-tachometer-alt"></i> Dashboard</h1>
+    <div class="btn-group">
+        <a href="{% url 'documents:upload' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Upload Document
+        </a>
+        <a href="{% url 'search_app:search' %}" class="btn btn-outline-primary">
+            <i class="fas fa-search"></i> Search
+        </a>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title">My Documents</h5>
+                        <h3 class="mb-0">{{ stats.total_uploaded }}</h3>
+                    </div>
+                    <i class="fas fa-file-upload fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title">Accessible</h5>
+                        <h3 class="mb-0">{{ stats.total_accessible }}</h3>
+                    </div>
+                    <i class="fas fa-lock-open fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div class="flex-grow-1">
+                        <h5 class="card-title">Categories</h5>
+                        <h3 class="mb-0">{{ stats.categories_count }}</h3>
+                    </div>
+                    <i class="fas fa-tags fa-2x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Role Info -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-user-tag"></i> Your Access Level</h5>
+                <p class="card-text">
+                    <span class="badge bg-secondary">{{ user_profile.role|title }}</span>
+                    {% if user_profile.department %}
+                        <span class="badge bg-light text-dark">{{ user_profile.department }}</span>
+                    {% endif %}
+                </p>
+                <small class="text-muted">
+                    You can access: 
+                    {% for category in user_profile.allowed_categories %}
+                        <span class="badge bg-light text-dark">{{ category|title }}</span>
+                    {% empty %}
+                        <span class="text-muted">No specific categories assigned</span>
+                    {% endfor %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Documents -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-clock"></i> Recent Uploads</h5>
+                <a href="{% url 'documents:list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% for doc in recent_docs %}
+                    <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">
+                                <a href="{% url 'documents:view' doc.id %}" class="text-decoration-none">
+                                    {{ doc.title|truncatechars:50 }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">
+                                {% if doc.category %}
+                                    <span class="badge category-{{ doc.category }} text-white">
+                                        {{ doc.get_category_display }}
+                                    </span>
+                                {% endif %}
+                                {{ doc.uploaded_at|date:"M d, Y" }}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">{{ doc.get_file_size_display }}</small>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted">No documents uploaded yet.</p>
+                    <a href="{% url 'documents:upload' %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-plus"></i> Upload Your First Document
+                    </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-share-alt"></i> Shared Documents</h5>
+                <a href="{% url 'search_app:search' %}" class="btn btn-sm btn-outline-primary">Search All</a>
+            </div>
+            <div class="card-body">
+                {% for doc in accessible_docs %}
+                    <div class="d-flex align-items-center mb-3 p-2 bg-light rounded">
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">
+                                <a href="{% url 'documents:view' doc.id %}" class="text-decoration-none">
+                                    {{ doc.title|truncatechars:50 }}
+                                </a>
+                            </h6>
+                            <small class="text-muted">
+                                {% if doc.category %}
+                                    <span class="badge category-{{ doc.category }} text-white">
+                                        {{ doc.get_category_display }}
+                                    </span>
+                                {% endif %}
+                                by {{ doc.author|default:doc.uploaded_by.username }}
+                            </small>
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">{{ doc.uploaded_at|date:"M d" }}</small>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted">No shared documents available.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
