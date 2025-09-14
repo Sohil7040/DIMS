@@ -1,32 +1,6 @@
-# AI-Powered Document Classification and Intelligent Indexing
+# DIMS - AI-Powered Document Classification and Intelligent Indexing
 
 A Django web application that provides intelligent document management with AI-powered classification, metadata extraction, and semantic search capabilities.
-
-## Features
-
-### Core Functionality
-- **Document Upload & Storage**: Support for PDF, DOCX, and TXT files with local storage
-- **AI-Powered Classification**: Automatic categorization into Finance, HR, Legal, Contracts, Technical Reports, and Invoices
-- **Metadata Extraction**: Automatic extraction of title, author, date, and named entities
-- **Intelligent Summarization**: Extractive summarization using TF-IDF
-- **Semantic Search**: Advanced search using sentence embeddings and cosine similarity
-- **Role-Based Access Control**: Department-based document access permissions
-- **Activity Logging**: Complete audit trail of user actions
-
-### User Interface
-- **Responsive Dashboard**: Clean, modern interface with document statistics
-- **Drag & Drop Upload**: Intuitive file upload with progress tracking
-- **Advanced Search**: Both keyword and semantic search capabilities
-- **Document Viewer**: Rich document preview with metadata and entities
-- **User Management**: Profile management with role assignments
-
-## Technology Stack
-
-- **Backend**: Django 4.2, SQLite
-- **AI/ML**: Hugging Face Transformers, SentenceTransformers, spaCy, scikit-learn
-- **Frontend**: Django Templates, Bootstrap 5, JavaScript
-- **File Processing**: PyPDF2, python-docx
-- **Search**: FAISS for vector similarity search
 
 ## Installation & Setup
 
@@ -105,37 +79,17 @@ document_ai/
 
 ## AI Processing Pipeline
 
-When a document is uploaded, the system:
+When a document is uploaded:
 
 1. **Text Extraction**: Extracts text from PDF, DOCX, or TXT files
 2. **Classification**: Uses rule-based classification (expandable to ML models)
-3. **Metadata Extraction**: 
+3. **Metadata Extraction**:
    - Title from first meaningful line
    - Author from patterns like "Author:", "By:", or email addresses
    - Date using regex patterns
 4. **Entity Recognition**: Extracts persons, organizations, money, locations using spaCy
 5. **Summarization**: Creates extractive summary using TF-IDF sentence scoring
 6. **Embeddings**: Generates sentence embeddings for semantic search
-
-## Key Features Detail
-
-### Role-Based Access Control
-- Users are assigned roles (admin, finance, hr, legal, technical)
-- Each role has access to specific document categories
-- Public documents are accessible to all users
-- Complete activity logging for security auditing
-
-### Semantic Search
-- Uses SentenceTransformers for embedding generation
-- Cosine similarity for document ranking
-- Fallback to keyword search if embeddings unavailable
-- Real-time search with AJAX interface
-
-### Document Classification
-- Rule-based classification using keyword matching
-- Easily extensible to use ML models (Hugging Face integration ready)
-- Confidence scoring for classifications
-- Manual override capability
 
 ## API Endpoints
 
@@ -147,14 +101,14 @@ When a document is uploaded, the system:
 
 ## Development Notes
 
-### Extending Classification
+### Extending Document Classification
 To add ML-based classification, modify `documents/utils.py`:
 
 ```python
 def classify_document(self, text: str) -> Tuple[str, float]:
     if not self.classifier:
         return self._rule_based_classification(text)
-    
+
     # Use Hugging Face classifier
     results = self.classifier(text[:512])
     # Process results and map to categories
@@ -166,7 +120,7 @@ def classify_document(self, text: str) -> Tuple[str, float]:
 3. Update `ALLOWED_EXTENSIONS` in settings
 
 ### Customizing Categories
-Modify `DOCUMENT_CATEGORIES` and `USER_ROLES` in `settings.py`:
+Modify `DOCUMENT_CATEGORIES` and `USER_ROLES` in `document_ai/settings.py`:
 
 ```python
 DOCUMENT_CATEGORIES = [
@@ -183,7 +137,7 @@ USER_ROLES = {
 ## Production Deployment
 
 ### Security Settings
-- Change `SECRET_KEY` in settings.py
+- Change `SECRET_KEY` in document_ai/settings.py
 - Set `DEBUG = False`
 - Configure `ALLOWED_HOSTS`
 - Use PostgreSQL instead of SQLite
@@ -194,12 +148,6 @@ USER_ROLES = {
 - Implement async processing for document analysis
 - Add database indexing for search fields
 - Use CDN for static files
-
-### Monitoring
-- Add logging configuration
-- Implement health checks
-- Monitor AI model performance
-- Track storage usage
 
 ## Contributing
 

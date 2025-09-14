@@ -1,6 +1,9 @@
 # TODO - Improve AI Overview Section
 
-## Steps:
+## Completed Tasks:
+- [x] Created comprehensive README.md for the DIMS project covering both Document AI system and Venue Booking system
+
+## Remaining Steps:
 1. Review and finalize the new fields in documents/models.py for keywords, topics, and sentiment.
 2. Verify and enhance the AI extraction methods in documents/utils.py:
    - extract_keywords()
